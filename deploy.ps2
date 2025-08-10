@@ -1,0 +1,43 @@
+﻿# 部署脚本 (deploy.ps1)
+
+# 1. 删除旧文件
+Write-Host "正在清理缓存和旧文件..." -ForegroundColor Cyan
+$directories = "public", "resources"
+foreach ($dir in $directories) {
+    if (Test-Path -Path $dir) {
+        Remove-Item -Path $dir -Recurse -Force
+        Write-Host "已删除 $dir 目录" -ForegroundColor Green
+    }
+}
+
+# 2. 生成静态文件
+Write-Host "正在构建网站..." -ForegroundColor Cyan
+hugo --minify -e production --cleanDestinationDir
+
+# 3. 添加 .nojekyll 文件防止Jekyll处理
+Write-Host "添加 .nojekyll 文件..." -ForegroundColor Cyan
+Set-Content -Path "public/.nojekyll" -Value ""
+
+# 4. 进入public目录并推送到GitHub
+Set-Location public
+
+# 初始化Git仓库
+git init
+git branch -M main
+
+# 添加所有文件
+git add .
+
+# 提交更改
+$commitTime = Get-Date -Format "yyyy-MM-dd HH:mm"
+git commit -m "部署更新: $commitTime"
+
+# 推送到GitHub (强制覆盖)
+Write-Host "正在推送到GitHub..." -ForegroundColor Cyan
+git remote add origin https://github.com/luoqigong/blog.github.io.git
+git push -f origin main
+
+# 5. 完成
+Set-Location ..
+Write-Host "✅ 部署成功！" -ForegroundColor Green
+Write-Host "访问地址: https://luoqigong.github.io/blog.github.io/" -ForegroundColor Magenta
